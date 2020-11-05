@@ -1,0 +1,128 @@
+---
+title: "Assignment Eight"
+author: "Maria Currie"
+date: "10/9/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(httpuv)
+library(caTools)
+
+# import data
+vgsales2019 <- read_csv("vgsales-12-4-2019-short.csv")
+video_game2016 <- read_csv("video-game-sales-at-22-Dec-2016.csv")
+
+# look at structure of datasets
+#str(vgsales2019)
+#str(video_game2016)
+
+#summary(vgsales2019)
+#summary(video_game2016)
+
+colnames(vgsales2019)[1]<-"Rank"
+colnames(vgsales2019)[3]<-"Genre"
+colnames(vgsales2019)[4]<-"ESRBRating"
+colnames(vgsales2019)[5]<-"Platform"
+colnames(vgsales2019)[6]<-"Publisher"
+colnames(vgsales2019)[8]<-"CriticalScore"
+colnames(vgsales2019)[10]<-"TotalShipped"
+colnames(vgsales2019)[11]<-"GlobalSales"
+
+
+colnames(video_game2016)[2]<-"Platform"
+colnames(video_game2016)[3]<-"YearOfRelease"
+colnames(video_game2016)[10]<-"GlobalSales"
+colnames(video_game2016)[16]<-"ESRBRating"
+
+```
+
+#### Graph 1
+##### Below is the disturbution of the log(GlobalSales) without sales NA and sales equal 0. Note the large dip around 9.5 not sure why this happens. But as we saw last week global sales has close to a normal disturbution besides the dip at 9.5
+```{r}
+#get rid of global sales of missing value or zero
+GameSales = vgsales2019 %>% 
+  filter(!is.na(GlobalSales)
+         , GlobalSales != 0)
+# convert global sales
+GameSales$GlobalSales = GameSales$GlobalSales *1000000
+
+
+ggplot(data = GameSales, aes(x=log(GlobalSales))) +
+  geom_density(fill="#69b3a2", color="#e9ecef", alpha=.75)
+
+#ggplot(data = GameSales) + 
+#  geom_histogram(mapping = aes(x = log(GlobalSales),  fill=..count..), binwidth = .5)
+```
+
+#### Graph 2
+##### I wanted to compare the ratings from 2016 to 2019. Although the 2019 data set has many more rows than the 2016. In both cases, Null is the highest rating.This is not surpirsing since games are not required to have the ESRB rating to be sold. ESRB is an americain company so some American manufactures 
+```{r}
+# library
+library(wordcloud2) 
+
+# 2019
+wc1 <- count(vgsales2019, ESRBRating)
+wordcloud2(wc1, size = 1)
+# 2016
+wc2 <- count(video_game2016, ESRBRating)
+wordcloud2(wc2, size = 1)
+```
+
+
+#### Graph 3
+##### Below is the critical score vs total shipped by ESBR rating. The highest shipped outliner is Wii sports as mentioned last week was sold with the Wii. It appears that the video games rated E have the widest disturbution. When the critical score rises for games rated E, the total shipped also raises some times. 
+
+```{r}
+# Libraries
+library(ggplot2)
+library(hrbrthemes)
+library(plotly)
+
+# removing nas from critical score adn total shipped
+cord = vgsales2019 %>% 
+  filter(!is.na(CriticalScore)
+         , !is.na(TotalShipped))
+
+fig <- plot_ly(data = cord, x = ~CriticalScore, y = ~TotalShipped, color = ~ESRBRating)
+
+fig
+
+
+```
+
+#### Quantitative analysis question: is the critical score and total shipped correlated?
+##### Based on the correlated test with a 0.2034254 they are not. How about without our outliner Wii sports? Wihtout the outliner of Wii sports, the critical score and total shipped are 4% more correlated 
+```{r}
+colnames(cord)[10]<-"Totalshipped"
+colnames(cord)[8]<-"CriticalScore"
+x<-cord[10]
+y<-cord[8]
+cor(x, y)
+
+cordwillsport = cord %>% 
+  filter(Name != "Wii Sports")
+
+colnames(cordwillsport)[10]<-"Totalshipped"
+colnames(cordwillsport)[8]<-"CriticalScore"
+
+cor(cordwillsport[10], cordwillsport[8])
+```
+
+#### Graph 3
+##### Note when removed nas for total shipped and user score, we are left with few entries. Again the video games with E rating have a much higher shipping total than the other rated vidoe games. 
+```{r}
+# removing nas from critical score adn total shipped
+user_ship = vgsales2019 %>% 
+  filter(!is.na(User_Score)
+         , !is.na(TotalShipped))
+
+plot_ly(data = user_ship, x = ~User_Score, y = ~TotalShipped, color = ~ESRBRating)
+
+cor(user_ship[10], user_ship[9])
+```
+
